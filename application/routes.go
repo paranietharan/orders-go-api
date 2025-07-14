@@ -1,7 +1,7 @@
 package application
 
 import (
-	"net/http"
+	"orders-api/handler"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -12,9 +12,16 @@ func loadRoutes() *chi.Mux {
 
 	router.Use(middleware.Logger)
 
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
-	})
+	router.Route("/order", loadOrderRoutes)
 
 	return router
+}
+
+func loadOrderRoutes(r chi.Router) {
+	orderHandler := &handler.OrderHandler{}
+
+	r.Post("/", orderHandler.Create)
+	r.Get("/", orderHandler.List)
+	r.Get("/{id}", orderHandler.GetByID)
+	r.Put("/{id}", orderHandler.Update)
 }
