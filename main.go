@@ -1,23 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/http"
+	"orders-api/application"
 )
 
 func main() {
-	server := &http.Server{
-		Addr:    ":3000",
-		Handler: http.HandlerFunc(basicHandler),
+	ctx := context.Background()
+	app := application.NewApp()
+	if err := app.Start(ctx); err != nil {
+		fmt.Printf("Failed to start application: %v\n", err)
 	}
-
-	err := server.ListenAndServe()
-	if err != nil {
-		fmt.Printf("Error starting server: %v\n", err)
-		return
-	}
-}
-
-func basicHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello, World!"))
 }
