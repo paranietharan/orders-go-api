@@ -1,24 +1,28 @@
 package application
 
 import (
-	"orders-api/handler"
-
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"orders-api/handler"
+	"orders-api/repository/order"
 )
 
-func loadRoutes() *chi.Mux {
+func (a *App) loadRoutes() {
 	router := chi.NewRouter()
 
 	router.Use(middleware.Logger)
 
-	router.Route("/order", loadOrderRoutes)
+	router.Route("/order", a.loadOrderRoutes)
 
-	return router
+	a.router = router
 }
 
-func loadOrderRoutes(r chi.Router) {
-	orderHandler := &handler.OrderHandler{}
+func (a *App) loadOrderRoutes(r chi.Router) {
+	orderHandler := &handler.OrderHandler{
+		Repo: &order.RedisRepository{
+			Redis: a.rdb,
+		},
+	}
 
 	r.Post("/", orderHandler.Create)
 	r.Get("/", orderHandler.List)

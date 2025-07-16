@@ -10,7 +10,7 @@ import (
 )
 
 type RedisRepository struct {
-	redis *redis.Client
+	Redis *redis.Client
 }
 
 func orderIDKey(id uint64) string { // function 2 find the order id key
@@ -25,7 +25,7 @@ func (r *RedisRepository) Insert(ctx context.Context, order model.Order) error {
 
 	key := orderIDKey(order.OrderId)
 
-	txn := r.redis.TxPipeline()
+	txn := r.Redis.TxPipeline()
 
 	res := txn.SetNX(ctx, key, string(data), 0)
 	if res.Err() != nil {
@@ -46,7 +46,7 @@ func (r *RedisRepository) Insert(ctx context.Context, order model.Order) error {
 
 func (r *RedisRepository) Find(ctx context.Context, id uint64) (model.Order, error) {
 	key := orderIDKey(id)
-	res := r.redis.Get(ctx, key)
+	res := r.Redis.Get(ctx, key)
 	if res.Err() != nil {
 		return model.Order{}, res.Err()
 	}
@@ -61,7 +61,7 @@ func (r *RedisRepository) Find(ctx context.Context, id uint64) (model.Order, err
 func (r *RedisRepository) Delete(ctx context.Context, id uint64) error {
 	key := orderIDKey(id)
 
-	txn := r.redis.TxPipeline()
+	txn := r.Redis.TxPipeline()
 
 	res := txn.Del(ctx, key)
 	if errors.Is(res.Err(), redis.Nil) {
@@ -90,7 +90,7 @@ func (r *RedisRepository) Update(ctx context.Context, order model.Order) error {
 	}
 
 	key := orderIDKey(order.OrderId)
-	res := r.redis.SetXX(ctx, key, string(data), 0)
+	res := r.Redis.SetXX(ctx, key, string(data), 0)
 	if errors.Is(res.Err(), redis.Nil) {
 		return fmt.Errorf("order not found")
 	} else if err != nil {
@@ -99,9 +99,9 @@ func (r *RedisRepository) Update(ctx context.Context, order model.Order) error {
 	return nil
 }
 
-type findAllPage struct {
-	size   uint
-	offset uint64
+type FindAllPage struct {
+	Size   uint
+	Offset uint64
 }
 
 type FindResult struct {
@@ -109,8 +109,8 @@ type FindResult struct {
 	Cursor uint64
 }
 
-func (r *RedisRepository) FindAll(ctx context.Context, page findAllPage) (FindResult, error) {
-	res := r.redis.SScan(ctx, "orders", page.offset, "*", int64(page.size))
+func (r *RedisRepository) FindAll(ctx context.Context, page FindAllPage) (FindResult, error) {
+	res := r.Redis.SScan(ctx, "orders", page.Offset, "*", int64(page.Size))
 	keys, cursor, err := res.Result()
 	if err != nil {
 		return FindResult{}, fmt.Errorf("Failed to get order ids from redis: %w", err)
@@ -120,7 +120,7 @@ func (r *RedisRepository) FindAll(ctx context.Context, page findAllPage) (FindRe
 		return FindResult{}, nil
 	}
 
-	xs, err := r.redis.MGet(ctx, keys...).Result()
+	xs, err := r.Redis.MGet(ctx, keys...).Result()
 	if err != nil {
 		return FindResult{}, fmt.Errorf("Failed to get Orders: %w", err)
 	}
